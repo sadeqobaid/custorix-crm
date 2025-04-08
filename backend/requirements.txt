@@ -1,0 +1,13 @@
+Django==4.2.7
+djangorestframework==3.14.0
+psycopg2-binary==2.9.6  # Using an older, more stable version
+django-cors-headers==4.3.0
+djangorestframework-simplejwt==5.3.0
+Pillow>=10.0.0  # More flexible version requirement
+python-dotenv==1.0.0
+drf-yasg==1.21.7
+django-filter==23.3
+celery==5.3.4
+redis==5.0.1
+gunicorn==21.2.0
+whitenoise==6.5.0

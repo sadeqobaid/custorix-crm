@@ -27,7 +27,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
 # Application definition
 
 INSTALLED_APPS = [
@@ -37,6 +40,21 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
+     # Third-party apps
+    'rest_framework',
+    'corsheaders',
+    'rest_framework_simplejwt',
+    
+    # Custom apps
+    'accounts',
+    'contacts',
+    'leads',
+    'sales',
+    'marketing',
+    'support',
+    'finance',
+    'core',
 ]
 
 MIDDLEWARE = [
@@ -74,8 +92,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'custorix',  # Your existing database name
+        'USER': 'postgres',  # Your existing username
+        'PASSWORD': 'sasobaid',  # Your existing password
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
 
