@@ -25,6 +25,25 @@ SECRET_KEY = 'django-insecure-fs=3=tdrk*^b+dczyu317@(ewh%nv$go_owrmpx0=6#kk5o!xm
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+        'file': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': 'django_error.log',
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file'],
+        'level': 'ERROR',
+    },
+}
+
 ALLOWED_HOSTS = []
 
 CORS_ALLOWED_ORIGINS = [
@@ -98,6 +117,10 @@ DATABASES = {
         'PASSWORD': 'sasobaid',  # Your existing password
         'HOST': 'localhost',
         'PORT': '5432',
+        'CONN_MAX_AGE': 0,  # Force new connection each time
+        'OPTIONS': {
+        'connect_timeout': 10,
+        }
     }
 }
 
