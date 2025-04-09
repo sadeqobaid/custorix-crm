@@ -57,3 +57,4 @@ build/
 # Logs
 logs/
 *.log
+venv_py311/
