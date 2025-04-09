@@ -8,16 +8,16 @@ from .serializers import (
 class LeadSourceViewSet(viewsets.ModelViewSet):
     queryset = LeadSource.objects.all()
     serializer_class = LeadSourceSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
 class LeadStatusViewSet(viewsets.ModelViewSet):
     queryset = LeadStatus.objects.all()
     serializer_class = LeadStatusSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
 class LeadViewSet(viewsets.ModelViewSet):
     queryset = Lead.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
     
     def get_serializer_class(self):
         if self.action == 'retrieve' or self.action == 'update':
@@ -27,4 +27,4 @@ class LeadViewSet(viewsets.ModelViewSet):
 class LeadScoringRuleViewSet(viewsets.ModelViewSet):
     queryset = LeadScoringRule.objects.all()
     serializer_class = LeadScoringRuleSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]

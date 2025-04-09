@@ -1,3 +1,6 @@
+from django.contrib import admin
+from django.urls import path, include
+
 from rest_framework import permissions
 from rest_framework.authentication import TokenAuthentication
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -35,6 +38,14 @@ from finance.views import (
     CurrencyViewSet, TaxRateViewSet, InvoiceViewSet, InvoiceLineItemViewSet,
     PaymentViewSet, ExpenseViewSet, FinancialAccountViewSet, FinancialTransactionViewSet
 )
+
+from django.contrib import admin
+
+# Customize admin site
+admin.site.site_header = "Custorix Admin"
+admin.site.site_title = "Custorix Admin Portal"
+admin.site.index_title = "Welcome to Custorix CRM Admin Portal"
+
 
 router = DefaultRouter()
 
@@ -104,6 +115,7 @@ router.register(r'financial-accounts', FinancialAccountViewSet)
 router.register(r'financial-transactions', FinancialTransactionViewSet)
 
 urlpatterns = [
+	path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),

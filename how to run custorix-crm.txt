@@ -1,0 +1,20 @@
+# Install Python 3.11 via Homebrew if not already installed
+brew install python@3.11
+
+# Create a new virtual environment with Python 3.11
+cd /path/to/custorix-crm
+cd backend
+python3.11 -m venv venv_py311
+source venv_py311/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+#### To Run Server 
+cd backend
+python manage.py runserver
+
+#### To Run Frontend 
+cd frontend
+npm install -- in case it is not found on your environment
+npm run dev

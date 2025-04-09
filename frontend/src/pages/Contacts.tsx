@@ -20,22 +20,37 @@ import {
   DialogContent,
   DialogActions,
   CircularProgress,
-  Chip
+  Chip,
+  Snackbar,
+  Alert,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  FormControlLabel,
+  Checkbox
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import BusinessIcon from '@mui/icons-material/Business';
+import { contactsAPI, accountsAPI } from '../api/apiService';
 
 const Contacts: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [contacts, setContacts] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<any[]>([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [openDialog, setOpenDialog] = useState(false);
   const [currentContact, setCurrentContact] = useState<any>(null);
   const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error'
+  });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -50,32 +65,61 @@ const Contacts: React.FC = () => {
     is_decision_maker: false
   });
 
-  useEffect(() => {
-    // In a real implementation, this would fetch data from the API
-    // For now, we'll simulate loading and set some dummy data
-    const timer = setTimeout(() => {
-      const dummyContacts = Array.from({ length: 30 }, (_, i) => ({
+  // Fetch contacts and accounts from API
+  const fetchContacts = async () => {
+    setLoading(true);
+    try {
+      const response = await contactsAPI.getContacts();
+      console.log('Fetched contacts:', response.data);
+      setContacts(response.data);
+    } catch (error) {
+      console.error('Error fetching contacts:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to load contacts',
+        severity: 'error'
+      });
+      // Use dummy data as fallback
+      const dummyContacts = Array.from({ length: 5 }, (_, i) => ({
         id: i + 1,
-        first_name: ['John', 'Jane', 'Michael', 'Sarah', 'David', 'Emily'][i % 6],
-        last_name: ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Miller'][i % 6],
+        first_name: ['John', 'Jane', 'Michael', 'Sarah', 'David'][i],
+        last_name: ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones'][i],
         account: {
-          id: Math.floor(i / 3) + 1,
-          account_name: `Account ${Math.floor(i / 3) + 1}`
+          id: i + 1,
+          account_name: `Account ${i + 1}`
         },
-        title: ['CEO', 'CTO', 'CFO', 'Marketing Director', 'Sales Manager', 'IT Manager'][i % 6],
+        title: ['CEO', 'CTO', 'CFO', 'Marketing Director', 'Sales Manager'][i],
         email: `contact${i + 1}@example.com`,
         phone: `(555) ${100 + i}-${1000 + i}`,
-        mobile: `(555) ${200 + i}-${2000 + i}`,
-        is_primary: i % 5 === 0,
+        is_primary: i % 2 === 0,
         is_decision_maker: i % 3 === 0,
-        created_at: new Date(Date.now() - i * 86400000).toISOString()
+        created_at: new Date().toISOString()
       }));
-      
       setContacts(dummyContacts);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
+  };
 
-    return () => clearTimeout(timer);
+  const fetchAccounts = async () => {
+    try {
+      const response = await accountsAPI.getAccounts();
+      console.log('Fetched accounts:', response.data);
+      setAccounts(response.data);
+    } catch (error) {
+      console.error('Error fetching accounts:', error);
+      // Use dummy accounts as fallback
+      const dummyAccounts = Array.from({ length: 5 }, (_, i) => ({
+        id: i + 1,
+        account_name: `Account ${i + 1}`
+      }));
+      setAccounts(dummyAccounts);
+    }
+  };
+
+  useEffect(() => {
+    fetchContacts();
+    fetchAccounts();
   }, []);
 
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -94,20 +138,20 @@ const Contacts: React.FC = () => {
       setFormData({
         first_name: contact.first_name,
         last_name: contact.last_name,
-        account: contact.account.account_name,
+        account: contact.account.id,
         title: contact.title || '',
         email: contact.email || '',
         phone: contact.phone || '',
         mobile: contact.mobile || '',
-        is_primary: contact.is_primary,
-        is_decision_maker: contact.is_decision_maker
+        is_primary: contact.is_primary || false,
+        is_decision_maker: contact.is_decision_maker || false
       });
     } else {
       setCurrentContact(null);
       setFormData({
         first_name: '',
         last_name: '',
-        account: '',
+        account: accounts.length > 0 ? accounts[0].id : '',
         title: '',
         email: '',
         phone: '',
@@ -131,40 +175,98 @@ const Contacts: React.FC = () => {
     });
   };
 
-  const handleSubmit = () => {
-    // In a real implementation, this would send data to the API
-    if (formMode === 'create') {
-      const newContact = {
-        id: contacts.length + 1,
-        ...formData,
-        account: {
-          id: 1,
-          account_name: formData.account
-        },
-        created_at: new Date().toISOString()
-      };
-      setContacts([newContact, ...contacts]);
-    } else if (formMode === 'edit' && currentContact) {
-      const updatedContacts = contacts.map(contact => 
-        contact.id === currentContact.id ? { 
-          ...contact, 
-          ...formData,
-          account: {
-            id: contact.account.id,
-            account_name: formData.account
-          }
-        } : contact
-      );
-      setContacts(updatedContacts);
-    }
-    
-    handleCloseDialog();
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData({
+      ...formData,
+      [name]: checked
+    });
   };
 
-  const handleDelete = (id: number) => {
-    // In a real implementation, this would send a delete request to the API
-    const updatedContacts = contacts.filter(contact => contact.id !== id);
-    setContacts(updatedContacts);
+  const handleSelectChange = (e: any) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({
+      ...snackbar,
+      open: false
+    });
+  };
+
+  const handleSubmit = async () => {
+    try {
+      // Prepare data for API
+      const contactData = {
+        ...formData
+      };
+      
+      console.log('Submitting contact data:', contactData);
+      
+      if (formMode === 'create') {
+        // Create new contact
+        const response = await contactsAPI.createContact(contactData);
+        console.log('Create contact response:', response.data);
+        
+        // Refresh contacts list
+        await fetchContacts();
+        
+        setSnackbar({
+          open: true,
+          message: 'Contact created successfully',
+          severity: 'success'
+        });
+      } else if (formMode === 'edit' && currentContact) {
+        // Update existing contact
+        const response = await contactsAPI.updateContact(currentContact.id, contactData);
+        console.log('Update contact response:', response.data);
+        
+        // Refresh contacts list
+        await fetchContacts();
+        
+        setSnackbar({
+          open: true,
+          message: 'Contact updated successfully',
+          severity: 'success'
+        });
+      }
+      
+      handleCloseDialog();
+    } catch (error) {
+      console.error('Error saving contact:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to save contact',
+        severity: 'error'
+      });
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      // Delete contact via API
+      await contactsAPI.deleteContact(id);
+      
+      // Refresh contacts list
+      await fetchContacts();
+      
+      setSnackbar({
+        open: true,
+        message: 'Contact deleted successfully',
+        severity: 'success'
+      });
+    } catch (error) {
+      console.error('Error deleting contact:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to delete contact',
+        severity: 'error'
+      });
+    }
   };
 
   if (loading) {
@@ -205,50 +307,58 @@ const Contacts: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {contacts
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((contact) => (
-                  <TableRow key={contact.id}>
-                    <TableCell>{`${contact.first_name} ${contact.last_name}`}</TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <BusinessIcon fontSize="small" sx={{ mr: 1, color: 'primary.main' }} />
-                        {contact.account.account_name}
-                      </Box>
-                    </TableCell>
-                    <TableCell>{contact.title}</TableCell>
-                    <TableCell>{contact.email}</TableCell>
-                    <TableCell>{contact.phone}</TableCell>
-                    <TableCell>
-                      {contact.is_primary && (
-                        <Chip size="small" label="Primary" color="primary" sx={{ mr: 1 }} />
-                      )}
-                      {contact.is_decision_maker && (
-                        <Chip size="small" label="Decision Maker" color="secondary" />
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleOpenDialog('view', contact)}
-                      >
-                        <VisibilityIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleOpenDialog('edit', contact)}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleDelete(contact.id)}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
+              {contacts.length > 0 ? (
+                contacts
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((contact) => (
+                    <TableRow key={contact.id}>
+                      <TableCell>{`${contact.first_name} ${contact.last_name}`}</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <BusinessIcon fontSize="small" sx={{ mr: 1, color: 'primary.main' }} />
+                          {contact.account?.account_name || 'N/A'}
+                        </Box>
+                      </TableCell>
+                      <TableCell>{contact.title}</TableCell>
+                      <TableCell>{contact.email}</TableCell>
+                      <TableCell>{contact.phone}</TableCell>
+                      <TableCell>
+                        {contact.is_primary && (
+                          <Chip size="small" label="Primary" color="primary" sx={{ mr: 1 }} />
+                        )}
+                        {contact.is_decision_maker && (
+                          <Chip size="small" label="Decision Maker" color="secondary" />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleOpenDialog('view', contact)}
+                        >
+                          <VisibilityIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleOpenDialog('edit', contact)}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleDelete(contact.id)}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} align="center">
+                    No contacts found
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </TableContainer>
@@ -294,15 +404,24 @@ const Contacts: React.FC = () => {
               />
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
-                name="account"
-                label="Account"
-                fullWidth
-                value={formData.account}
-                onChange={handleInputChange}
-                disabled={formMode === 'view'}
-                required
-              />
+              <FormControl fullWidth>
+                <InputLabel id="account-label">Account</InputLabel>
+                <Select
+                  labelId="account-label"
+                  name="account"
+                  value={formData.account}
+                  onChange={handleSelectChange}
+                  disabled={formMode === 'view'}
+                  label="Account"
+                  required
+                >
+                  {accounts.map((account) => (
+                    <MenuItem key={account.id} value={account.id}>
+                      {account.account_name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField
@@ -344,6 +463,32 @@ const Contacts: React.FC = () => {
                 disabled={formMode === 'view'}
               />
             </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    name="is_primary"
+                    checked={formData.is_primary}
+                    onChange={handleCheckboxChange}
+                    disabled={formMode === 'view'}
+                  />
+                }
+                label="Primary Contact"
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    name="is_decision_maker"
+                    checked={formData.is_decision_maker}
+                    onChange={handleCheckboxChange}
+                    disabled={formMode === 'view'}
+                  />
+                }
+                label="Decision Maker"
+              />
+            </Grid>
           </Grid>
         </DialogContent>
         <DialogActions>
@@ -352,11 +497,23 @@ const Contacts: React.FC = () => {
           </Button>
           {formMode !== 'view' && (
             <Button onClick={handleSubmit} variant="contained">
-              {formMode === 'create' ? 'Create' : 'Save'}
+              {formMode === 'create' ? 'Create Contact' : 'Save Changes'}
             </Button>
           )}
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={6000} 
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

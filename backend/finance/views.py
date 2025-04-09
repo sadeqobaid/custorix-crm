@@ -9,7 +9,7 @@ from .serializers import (
 class CurrencyViewSet(viewsets.ModelViewSet):
     queryset = Currency.objects.all()
     serializer_class = CurrencySerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
 class TaxRateViewSet(viewsets.ModelViewSet):
     queryset = TaxRate.objects.all()

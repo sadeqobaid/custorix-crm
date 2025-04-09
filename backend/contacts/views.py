@@ -12,11 +12,11 @@ from .serializers import (
 class CountryViewSet(viewsets.ModelViewSet):
     queryset = Country.objects.all()
     serializer_class = CountrySerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
 class StateViewSet(viewsets.ModelViewSet):
     queryset = State.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
     
     def get_serializer_class(self):
         if self.action in ['list', 'retrieve']:
@@ -31,7 +31,7 @@ class StateViewSet(viewsets.ModelViewSet):
 
 class CityViewSet(viewsets.ModelViewSet):
     queryset = City.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
     
     def get_serializer_class(self):
         if self.action in ['list', 'retrieve']:
@@ -46,7 +46,7 @@ class CityViewSet(viewsets.ModelViewSet):
 
 class LocationViewSet(viewsets.ModelViewSet):
     queryset = Location.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
     
     def get_serializer_class(self):
         if self.action in ['list', 'retrieve']:
@@ -62,7 +62,7 @@ class LocationViewSet(viewsets.ModelViewSet):
 class IndustryViewSet(viewsets.ModelViewSet):
     queryset = Industry.objects.all()
     serializer_class = IndustrySerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
     
     def perform_create(self, serializer):
         serializer.save()
@@ -72,7 +72,7 @@ class IndustryViewSet(viewsets.ModelViewSet):
 
 class AccountViewSet(viewsets.ModelViewSet):
     queryset = Account.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
     
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -89,7 +89,7 @@ class AccountViewSet(viewsets.ModelViewSet):
 
 class AccountLocationViewSet(viewsets.ModelViewSet):
     queryset = AccountLocation.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
     
     def get_serializer_class(self):
         if self.action in ['list', 'retrieve']:
@@ -104,7 +104,7 @@ class AccountLocationViewSet(viewsets.ModelViewSet):
 
 class ContactViewSet(viewsets.ModelViewSet):
     queryset = Contact.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
     
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -147,7 +147,7 @@ class ContactViewSet(viewsets.ModelViewSet):
             raise
 class ContactLocationViewSet(viewsets.ModelViewSet):
     queryset = ContactLocation.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
     
     def get_serializer_class(self):
         if self.action in ['list', 'retrieve']:

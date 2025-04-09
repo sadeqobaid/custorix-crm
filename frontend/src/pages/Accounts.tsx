@@ -19,12 +19,20 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  CircularProgress
+  CircularProgress,
+  Snackbar,
+  Alert,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  FormHelperText
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import { accountsAPI } from '../api/apiService';
 
 const Accounts: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -34,6 +42,13 @@ const Accounts: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [currentAccount, setCurrentAccount] = useState<any>(null);
   const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error'
+  });
+  const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
+  const [submitting, setSubmitting] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -46,26 +61,39 @@ const Accounts: React.FC = () => {
     status: 'Active'
   });
 
-  useEffect(() => {
-    // In a real implementation, this would fetch data from the API
-    // For now, we'll simulate loading and set some dummy data
-    const timer = setTimeout(() => {
-      const dummyAccounts = Array.from({ length: 25 }, (_, i) => ({
+  // Fetch accounts from API
+  const fetchAccounts = async () => {
+    setLoading(true);
+    try {
+      const response = await accountsAPI.getAccounts();
+      console.log('Fetched accounts:', response.data);
+      setAccounts(response.data);
+    } catch (error) {
+      console.error('Error fetching accounts:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to load accounts',
+        severity: 'error'
+      });
+      // Use dummy data as fallback
+      const dummyAccounts = Array.from({ length: 5 }, (_, i) => ({
         id: i + 1,
         account_name: `Account ${i + 1}`,
         account_number: `ACC-${1000 + i}`,
         industry: ['Technology', 'Healthcare', 'Finance', 'Manufacturing', 'Retail'][i % 5],
         website: `https://example${i + 1}.com`,
-        phone: `(555) ${100 + i}-${1000 + i}`,
+        phone: `(555)  ${100 + i}-${1000 + i}`,
         status: ['Active', 'Inactive'][i % 2],
-        created_at: new Date(Date.now() - i * 86400000).toISOString()
+        created_at: new Date().toISOString()
       }));
-      
       setAccounts(dummyAccounts);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
+  };
 
-    return () => clearTimeout(timer);
+  useEffect(() => {
+    fetchAccounts();
   }, []);
 
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -79,16 +107,17 @@ const Accounts: React.FC = () => {
 
   const handleOpenDialog = (mode: 'create' | 'edit' | 'view', account?: any) => {
     setFormMode(mode);
+    setFormErrors({});
     if (account) {
       setCurrentAccount(account);
       setFormData({
-        account_name: account.account_name,
-        account_number: account.account_number,
-        industry: account.industry,
+        account_name: account.account_name || '',
+        account_number: account.account_number || '',
+        industry: account.industry || '',
         website: account.website || '',
         phone: account.phone || '',
-        description: '',
-        status: account.status
+        description: account.description || '',
+        status: account.status || 'Active'
       });
     } else {
       setCurrentAccount(null);
@@ -107,6 +136,7 @@ const Accounts: React.FC = () => {
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
+    setFormErrors({});
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,31 +145,153 @@ const Accounts: React.FC = () => {
       ...formData,
       [name]: value
     });
+    
+    // Clear error for this field when user types
+    if (formErrors[name]) {
+      setFormErrors({
+        ...formErrors,
+        [name]: ''
+      });
+    }
   };
 
-  const handleSubmit = () => {
-    // In a real implementation, this would send data to the API
-    if (formMode === 'create') {
-      const newAccount = {
-        id: accounts.length + 1,
-        ...formData,
-        created_at: new Date().toISOString()
-      };
-      setAccounts([newAccount, ...accounts]);
-    } else if (formMode === 'edit' && currentAccount) {
-      const updatedAccounts = accounts.map(account => 
-        account.id === currentAccount.id ? { ...account, ...formData } : account
-      );
-      setAccounts(updatedAccounts);
+  const handleSelectChange = (e: any) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+    
+    // Clear error for this field when user selects
+    if (formErrors[name]) {
+      setFormErrors({
+        ...formErrors,
+        [name]: ''
+      });
+    }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({
+      ...snackbar,
+      open: false
+    });
+  };
+
+  const validateForm = () => {
+    const errors: {[key: string]: string} = {};
+    
+    if (!formData.account_name.trim()) {
+      errors.account_name = 'Account Name is required';
     }
     
-    handleCloseDialog();
+    if (!formData.account_number.trim()) {
+      errors.account_number = 'Account Number is required';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
-  const handleDelete = (id: number) => {
-    // In a real implementation, this would send a delete request to the API
-    const updatedAccounts = accounts.filter(account => account.id !== id);
-    setAccounts(updatedAccounts);
+  const handleSubmit = async () => {
+    console.log('handleSubmit called');
+    
+    // Validate form
+    if (!validateForm()) {
+      console.log('Form validation failed', formErrors);
+      return;
+    }
+    
+    setSubmitting(true);
+    
+    try {
+      // Prepare data for API
+      const accountData = {
+        ...formData
+      };
+      
+      console.log('Submitting account data:', accountData);
+      
+      if (formMode === 'create') {
+        // Create new account
+        const response = await accountsAPI.createAccount(accountData);
+        console.log('Create account response:', response.data);
+        
+        // Refresh accounts list
+        await fetchAccounts();
+        
+        setSnackbar({
+          open: true,
+          message: 'Account created successfully',
+          severity: 'success'
+        });
+      } else if (formMode === 'edit' && currentAccount) {
+        // Update existing account
+        const response = await accountsAPI.updateAccount(currentAccount.id, accountData);
+        console.log('Update account response:', response.data);
+        
+        // Refresh accounts list
+        await fetchAccounts();
+        
+        setSnackbar({
+          open: true,
+          message: 'Account updated successfully',
+          severity: 'success'
+        });
+      }
+      
+      handleCloseDialog();
+    } catch (error: any) {
+      console.error('Error saving account:', error);
+      
+      // Handle validation errors from backend
+      if (error.response?.data) {
+        console.error('Backend validation errors:', error.response.data);
+        
+        // Map backend errors to form fields
+        const backendErrors = error.response.data;
+        const formattedErrors: {[key: string]: string} = {};
+        
+        Object.keys(backendErrors).forEach(key => {
+          formattedErrors[key] = Array.isArray(backendErrors[key]) 
+            ? backendErrors[key][0] 
+            : backendErrors[key];
+        });
+        
+        setFormErrors(formattedErrors);
+      }
+      
+      setSnackbar({
+        open: true,
+        message: 'Failed to save account: ' + (error.response?.data?.detail || error.message || 'Unknown error'),
+        severity: 'error'
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      // Delete account via API
+      await accountsAPI.deleteAccount(id.toString());
+      
+      // Refresh accounts list
+      await fetchAccounts();
+      
+      setSnackbar({
+        open: true,
+        message: 'Account deleted successfully',
+        severity: 'success'
+      });
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to delete account',
+        severity: 'error'
+      });
+    }
   };
 
   if (loading) {
@@ -180,38 +332,46 @@ const Accounts: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {accounts
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((account) => (
-                  <TableRow key={account.id}>
-                    <TableCell>{account.account_name}</TableCell>
-                    <TableCell>{account.account_number}</TableCell>
-                    <TableCell>{account.industry}</TableCell>
-                    <TableCell>{account.website}</TableCell>
-                    <TableCell>{account.phone}</TableCell>
-                    <TableCell>{account.status}</TableCell>
-                    <TableCell>
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleOpenDialog('view', account)}
-                      >
-                        <VisibilityIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleOpenDialog('edit', account)}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleDelete(account.id)}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
+              {accounts.length > 0 ? (
+                accounts
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((account) => (
+                    <TableRow key={account.id}>
+                      <TableCell>{account.account_name}</TableCell>
+                      <TableCell>{account.account_number}</TableCell>
+                      <TableCell>{account.industry}</TableCell>
+                      <TableCell>{account.website}</TableCell>
+                      <TableCell>{account.phone}</TableCell>
+                      <TableCell>{account.status}</TableCell>
+                      <TableCell>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleOpenDialog('view', account)}
+                        >
+                          <VisibilityIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleOpenDialog('edit', account)}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleDelete(account.id)}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} align="center">
+                    No accounts found
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </TableContainer>
@@ -243,6 +403,8 @@ const Accounts: React.FC = () => {
                 onChange={handleInputChange}
                 disabled={formMode === 'view'}
                 required
+                error={!!formErrors.account_name}
+                helperText={formErrors.account_name}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -254,6 +416,8 @@ const Accounts: React.FC = () => {
                 onChange={handleInputChange}
                 disabled={formMode === 'view'}
                 required
+                error={!!formErrors.account_number}
+                helperText={formErrors.account_number}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -264,6 +428,8 @@ const Accounts: React.FC = () => {
                 value={formData.industry}
                 onChange={handleInputChange}
                 disabled={formMode === 'view'}
+                error={!!formErrors.industry}
+                helperText={formErrors.industry}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -274,6 +440,8 @@ const Accounts: React.FC = () => {
                 value={formData.website}
                 onChange={handleInputChange}
                 disabled={formMode === 'view'}
+                error={!!formErrors.website}
+                helperText={formErrors.website}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -284,17 +452,26 @@ const Accounts: React.FC = () => {
                 value={formData.phone}
                 onChange={handleInputChange}
                 disabled={formMode === 'view'}
+                error={!!formErrors.phone}
+                helperText={formErrors.phone}
               />
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
-                name="status"
-                label="Status"
-                fullWidth
-                value={formData.status}
-                onChange={handleInputChange}
-                disabled={formMode === 'view'}
-              />
+              <FormControl fullWidth error={!!formErrors.status}>
+                <InputLabel id="status-label">Status</InputLabel>
+                <Select
+                  labelId="status-label"
+                  name="status"
+                  value={formData.status}
+                  onChange={handleSelectChange}
+                  disabled={formMode === 'view'}
+                  label="Status"
+                >
+                  <MenuItem value="Active">Active</MenuItem>
+                  <MenuItem value="Inactive">Inactive</MenuItem>
+                </Select>
+                {formErrors.status && <FormHelperText>{formErrors.status}</FormHelperText>}
+              </FormControl>
             </Grid>
             <Grid item xs={12}>
               <TextField
@@ -306,6 +483,8 @@ const Accounts: React.FC = () => {
                 value={formData.description}
                 onChange={handleInputChange}
                 disabled={formMode === 'view'}
+                error={!!formErrors.description}
+                helperText={formErrors.description}
               />
             </Grid>
           </Grid>
@@ -315,12 +494,28 @@ const Accounts: React.FC = () => {
             {formMode === 'view' ? 'Close' : 'Cancel'}
           </Button>
           {formMode !== 'view' && (
-            <Button onClick={handleSubmit} variant="contained">
-              {formMode === 'create' ? 'Create' : 'Save'}
+            <Button 
+              onClick={handleSubmit} 
+              variant="contained"
+              disabled={submitting}
+            >
+              {submitting ? 'Saving...' : formMode === 'create' ? 'Create Account' : 'Save Changes'}
             </Button>
           )}
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={6000} 
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };
