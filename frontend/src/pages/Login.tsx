@@ -37,12 +37,8 @@ const Login = () => {
     severity: 'success' as 'success' | 'error'
   });
 
-  // Check if user is already logged in
-  useEffect(() => {
-    if (authAPI.isAuthenticated()) {
-      navigate('/');
-    }
-  }, [navigate]);
+  // Check if user is already logged in - removed to prevent redirect loop
+  // We'll let App.tsx handle this logic
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -105,9 +101,12 @@ const Login = () => {
         severity: 'success'
       });
       
+      // Dispatch a custom event to notify App.tsx that login was successful
+      window.dispatchEvent(new Event('login-success'));
+      
       // Redirect to dashboard after successful login
       setTimeout(() => {
-        navigate('/');
+        navigate('/dashboard');
       }, 1000);
     } catch (error: any) {
       console.error('Login error:', error);

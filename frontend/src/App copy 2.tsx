@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-router-dom';
+import React from 'react';
+import { Routes, Route, Link } from 'react-router-dom';
 import { Box, Container, AppBar, Toolbar, Typography, Button, Drawer, List, ListItem, ListItemIcon, ListItemText, Divider } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
@@ -9,9 +9,6 @@ import CampaignIcon from '@mui/icons-material/Campaign';
 import SupportIcon from '@mui/icons-material/Support';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import SettingsIcon from '@mui/icons-material/Settings';
-import LogoutIcon from '@mui/icons-material/Logout';
-import InfoIcon from '@mui/icons-material/Info';
-import { authAPI } from './api/apiService';
 
 // Import all pages
 import Dashboard from './pages/Dashboard';
@@ -26,67 +23,18 @@ import KnowledgeBase from './pages/KnowledgeBase';
 import Invoices from './pages/Invoices';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
-import ThankYou from './pages/ThankYou';
 
 const drawerWidth = 240;
 
-// Protected route component
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const isAuthenticated = authAPI.isAuthenticated();
-  
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  return children;
-};
-
 const App = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [isAuthenticated, setIsAuthenticated] = useState(authAPI.isAuthenticated());
-
-  // Check authentication status only once on component mount
-  // This prevents infinite loops with the login page
-  useEffect(() => {
-    const authStatus = authAPI.isAuthenticated();
-    setIsAuthenticated(authStatus);
-    
-    // Only redirect if not already on login or thank-you page
-    const isLoginPage = location.pathname === '/login';
-    const isThankYouPage = location.pathname === '/thank-you';
-    
-    if (!authStatus && !isLoginPage && !isThankYouPage) {
-      navigate('/login');
-    } else if (authStatus && isLoginPage) {
-      navigate('/dashboard');
-    }
-  }, []);
-
-  const handleLogout = () => {
-    // Call the logout API function
-    authAPI.logout();
-    setIsAuthenticated(false);
-    
-    // Navigate to the thank you page
-    navigate('/thank-you');
-  };
-
-  // Render different layouts based on authentication
-  const renderAuthenticatedLayout = () => (
+  return (
     <Box sx={{ display: 'flex' }}>
       <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Custorix CRM
           </Typography>
-          <Button 
-            color="inherit" 
-            onClick={handleLogout}
-            startIcon={<LogoutIcon />}
-          >
-            Logout
-          </Button>
+          <Button color="inherit" component={Link} to="/login">Login</Button>
         </Toolbar>
       </AppBar>
       
@@ -101,7 +49,7 @@ const App = () => {
         <Toolbar />
         <Box sx={{ overflow: 'auto' }}>
           <List>
-            <ListItem button component={Link} to="/dashboard">
+            <ListItem button component={Link} to="/">
               <ListItemIcon><DashboardIcon /></ListItemIcon>
               <ListItemText primary="Dashboard" />
             </ListItem>
@@ -149,19 +97,6 @@ const App = () => {
               <ListItemText primary="Settings" />
             </ListItem>
           </List>
-          <Divider />
-          <List>
-            <ListItem>
-              <ListItemIcon><InfoIcon /></ListItemIcon>
-              <ListItemText 
-                primary="Developed by: Sadeq Obaid" 
-                primaryTypographyProps={{ 
-                  variant: 'body2',
-                  style: { fontStyle: 'italic' }
-                }}
-              />
-            </ListItem>
-          </List>
         </Box>
       </Drawer>
       
@@ -169,8 +104,8 @@ const App = () => {
         <Toolbar />
         <Container>
           <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/login" element={<Login />} />
             <Route path="/accounts" element={<Accounts />} />
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/leads" element={<Leads />} />
@@ -181,37 +116,11 @@ const App = () => {
             <Route path="/invoices" element={<Invoices />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Container>
       </Box>
     </Box>
   );
-
-  const renderUnauthenticatedLayout = () => (
-    <Container>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/thank-you" element={<ThankYou />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </Container>
-  );
-
-  // Update authentication state when login is successful
-  useEffect(() => {
-    const handleLoginSuccess = () => {
-      setIsAuthenticated(true);
-    };
-    
-    window.addEventListener('login-success', handleLoginSuccess);
-    
-    return () => {
-      window.removeEventListener('login-success', handleLoginSuccess);
-    };
-  }, []);
-
-  return isAuthenticated ? renderAuthenticatedLayout() : renderUnauthenticatedLayout();
 };
 
 export default App;
