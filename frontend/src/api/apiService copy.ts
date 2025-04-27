@@ -8,7 +8,7 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-});
+}) ;
 
 // Authentication token management
 const TOKEN_KEY = 'custorix_auth_token';
@@ -104,21 +104,6 @@ apiClient.interceptors.response.use(
   }
 );
 
-// Notification services - Simulated since backend endpoints don't exist
-export const notificationAPI = {
-  sendEmail: (data: { to: string, subject: string, body: string }) => {
-    // Simulate successful email sending
-    console.log('SIMULATED EMAIL SENT:', data);
-    return Promise.resolve({ data: { success: true, message: 'Email sent successfully' } });
-  },
-  
-  sendSMS: (data: { to: string, message: string }) => {
-    // Simulate successful SMS sending
-    console.log('SIMULATED SMS SENT:', data);
-    return Promise.resolve({ data: { success: true, message: 'SMS sent successfully' } });
-  }
-};
-
 // API endpoints
 export const authAPI = {
   login: (credentials: { username: string; password: string }) => 
@@ -128,40 +113,8 @@ export const authAPI = {
         setAuthTokens(access, refresh);
         return response;
       }),
-  register: async (userData: any) => {
-    // Use the correct endpoint for user creation
-    const response = await apiClient.post('/users/', userData);
-    
-    // Send welcome email notification (simulated)
-    try {
-      const emailData = {
-        to: userData.email,
-        subject: 'Welcome to Custorix CRM',
-        body: `Dear ${userData.fullName},\n\nThank you for registering with Custorix CRM. Your account has been created successfully.\n\nUsername: ${userData.username}\n\nYou can now log in to access all features of our CRM system.\n\nBest regards,\nThe Custorix Team`
-      };
-      
-      await notificationAPI.sendEmail(emailData);
-      console.log('Welcome email sent successfully');
-    } catch (emailError) {
-      console.error('Failed to send welcome email:', emailError);
-    }
-    
-    // Send SMS notification (simulated)
-    try {
-      const smsData = {
-        to: userData.phone,
-        message: `Welcome to Custorix CRM, ${userData.fullName}! Your account has been created successfully. You can now log in with your username: ${userData.username}`
-      };
-      
-      await notificationAPI.sendSMS(smsData);
-      console.log('Welcome SMS sent successfully');
-    } catch (smsError) {
-      console.error('Failed to send welcome SMS:', smsError);
-    }
-    
-    return response;
-  },
-  getProfile: () => apiClient.get('/users/me/'),
+  register: (userData: any) => apiClient.post('/auth/register/', userData),
+  getProfile: () => apiClient.get('/auth/profile/'),
   logout: () => {
     clearAuthTokens();
     return Promise.resolve();

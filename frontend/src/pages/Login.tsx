@@ -10,7 +10,8 @@ import {
   CircularProgress,
   InputAdornment,
   IconButton,
-  Snackbar
+  Snackbar,
+  Grid
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useNavigate, Link } from 'react-router-dom';
@@ -203,14 +204,21 @@ const Login = () => {
             )}
           </Button>
           
-          <Box sx={{ mt: 2, textAlign: 'center' }}>
-            <Typography variant="body2">
-              Don't have an account?{' '}
-              <Link to="/register" style={{ textDecoration: 'none' }}>
-                Register
-              </Link>
-            </Typography>
-          </Box>
+          <Grid container sx={{ mt: 2 }}>
+            <Grid item xs={6} sx={{ textAlign: 'left' }}>
+              <Typography variant="caption" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
+                Developed by Sadeq Obaid
+              </Typography>
+            </Grid>
+            <Grid item xs={6} sx={{ textAlign: 'right' }}>
+              <Typography variant="body2">
+                Don't have an account?{' '}
+                <Link to="/register" style={{ textDecoration: 'none' }}>
+                  Register
+                </Link>
+              </Typography>
+            </Grid>
+          </Grid>
         </Box>
       </Paper>
       

@@ -16,6 +16,7 @@ import { authAPI } from './api/apiService';
 // Import all pages
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Accounts from './pages/Accounts';
 import Contacts from './pages/Contacts';
 import Leads from './pages/Leads';
@@ -52,11 +53,12 @@ const App = () => {
     const authStatus = authAPI.isAuthenticated();
     setIsAuthenticated(authStatus);
     
-    // Only redirect if not already on login or thank-you page
+    // Only redirect if not already on login, register, or thank-you page
     const isLoginPage = location.pathname === '/login';
+    const isRegisterPage = location.pathname === '/register';
     const isThankYouPage = location.pathname === '/thank-you';
     
-    if (!authStatus && !isLoginPage && !isThankYouPage) {
+    if (!authStatus && !isLoginPage && !isRegisterPage && !isThankYouPage) {
       navigate('/login');
     } else if (authStatus && isLoginPage) {
       navigate('/dashboard');
@@ -192,6 +194,7 @@ const App = () => {
     <Container>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/thank-you" element={<ThankYou />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
